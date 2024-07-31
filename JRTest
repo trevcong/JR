@@ -1,0 +1,169 @@
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic.FileIO;
+using System.Data;
+using System.IO;
+
+
+namespace SQLTestOne
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+
+            string csvloc = @"C:\Programs\MOCK_DATA.csv";
+            //InsertOneLineSQL("John", "Doe", "123 Main St", "", "Anytown", "CA", "12345", DateTime.Now);
+            ConvertFiletoDataTable(csvloc, ',');
+
+
+            //# string csv_file_path = "";
+            //# DataTable csvData = GetDataTableFromCSVFile(csv_file_path);
+
+            //# InsertDataIntoSQLServerUsingSQLBulkCopy(csvData);
+
+
+
+        }
+        /**
+            private static DataTable GetDataTableFromCSVFile(string csv_file_path)
+            {
+                DataTable csvData = new DataTable();
+                try
+                {
+                    using(TextFieldParser csvReader = new TextFieldParser(csv_file_path))
+                    {
+                        csvReader.SetDelimiters(new string[] { ", " });
+                        csvReader.hasFieldsEnclosedInQuotes = true;
+                        string[] colFields = csvReader.readFields();
+                        foreach(string column in colFields)
+                        {
+                            DataColumn datacolumn = new DataColumn(column);
+                            datacolumn.AllowDBNull = true;
+                            csvData.columns.Add(datacolumn);
+                        }
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fieldData = csvReader.ReadFields();
+
+                            for (int i = 0; i < fieldData.Length; i++)
+                            {
+                                if (fieldData[i] == "")
+                                {
+                                    fieldData[i] = null; 
+                                }
+                            }
+                            csvData.Rows.Add(fieldData);
+                        }
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+                return csvData;
+            }
+           
+        
+            public static void InsertDataIntoSQLServerUsingSQLBulkCopy(DataTable csvFileData)
+            {
+                using(SqlConnection connect = new SqlConnection("Data Source=xmpdb01;Persist Security Info=True;User ID=jrxmedia;Password=JR1sqlus3r; database=RileysSandbox");
+                {
+                    dbConnection.Open();
+                    using (SqlBulkCopy s = new SqlBulkCopy(dbConnection))
+                    {
+                        s.DestinationTableName = 'TestTable';
+
+                        foreach (var column in csvFileData.columns)
+                            s.ColumnMappings.Add(column.toString(), column.ToString());
+
+                        s.WriteToServer(csvFileData);
+                    }
+                    
+                }
+            }
+    **/
+
+
+
+        public static DataTable ConvertFiletoDataTable(string strFilePath, char delimeter)
+        {
+
+            DataTable dt = new DataTable();
+            using (StreamReader sr = new StreamReader(strFilePath))
+            {
+
+                string[] headers = sr.ReadLine().Split(delimeter);
+                foreach (string header in headers)
+                {
+                    dt.Columns.Add(header);
+                }
+                while (!sr.EndOfStream)
+                {
+
+
+                    //string[] row = sr.ReadLine().Split(delimeter);
+                    DataRow dr = dt.NewRow();
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+
+                        dr[i] = row[i];
+                    }
+                    dt.Rows.Add(dr);
+                }
+            }
+            return dt;
+        }
+
+        public static List<string> ReadFields(string row, string delimeter)
+        {
+
+            List<string> rowret;
+            for(int i = 0; i < row.Length; i++)
+            {
+                
+            }
+        }
+        public static void InsertOneLineSQL(string firstName, string lastName, string address1, string address2, string city, string state, string zip, DateTime dateOfBirth)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection("Data Source=xmpdb01;Persist Security Info=True;User ID=jrxmedia;Password=JR1sqlus3r; database=RileysSandbox"))
+                {
+                    conn.Open();
+
+                    string sql = "INSERT INTO TestTable (FirstName, LastName, Address1, Address2, City, State, Zip, Date) " +
+                                 "VALUES (@firstName, @lastName, @address1, @address2, @city, @state, @zip, @dateOfBirth)";
+
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@firstName", firstName);
+                        cmd.Parameters.AddWithValue("@lastName", lastName);
+                        cmd.Parameters.AddWithValue("@address1", address1);
+                        cmd.Parameters.AddWithValue("@address2", address2);
+                        cmd.Parameters.AddWithValue("@city", city);
+                        cmd.Parameters.AddWithValue("@state", state);
+                        cmd.Parameters.AddWithValue("@zip", zip);
+                        cmd.Parameters.AddWithValue("@dateOfBirth", dateOfBirth);
+
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    Console.WriteLine($" '{firstName} {lastName}' inserted successfully!");
+                }
+            }
+            catch (SqlException ex)
+            {
+                Console.WriteLine("Error inserting data: " + ex.Message);
+            }
+        }
+    }
+}
+
+
+
+  
