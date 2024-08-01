@@ -1,0 +1,294 @@
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic.FileIO;
+using System.Data;
+using System.IO;
+using ClosedXML.Excel;
+
+
+namespace SQLTestOne
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Define the path to the input CSV file
+            string csvFilePath = @"C:\Users\tcong\Downloads\MOCK_DATA (1).csv";
+            // Define the delimiter used in the CSV file (e.g., ',')
+            char delimiter = ',';
+
+            // Define the folder path to save the output Excel file
+           // string folderPath = @"C:\Users\tcong\OneDrive\Desktop\55";
+            // Define the name of the output Excel file
+            //string fileName = "output_file1.xlsx";
+            // Combine folder path and file name to get the full file path
+            //string excelFilePath = Path.Combine(folderPath, fileName);
+
+            // Ensure the folder exists, create it if it doesn't
+            //if (!Directory.Exists(folderPath))
+            //{
+            //    Directory.CreateDirectory(folderPath);
+           // }
+
+            // Convert the CSV file to a DataTable
+            DataTable dataTable = ConvertFiletoDataTable(csvFilePath, delimiter);
+
+            // Export the DataTable to an Excel file
+           // ExportToExcel(dataTable, excelFilePath);
+
+            //Console.WriteLine("CSV data successfully exported to Excel.");
+
+
+           
+            string destinationTable = "dbo.YourTableName";
+
+            BulkInsertToDatabase(dataTable, destinationTable);
+
+
+            //string csvloc = @"C:\Users\tcong\OneDrive\Desktop\500 richest people 2021.csv";
+            //InsertOneLineSQL("John", "Doe", "123 Main St", "", "Anytown", "CA", "12345", DateTime.Now);
+            //ConvertFiletoDataTable(csvloc, ';');
+
+
+            //# string csv_file_path = "";
+            //# DataTable csvData = GetDataTableFromCSVFile(csv_file_path);
+
+            //# InsertDataIntoSQLServerUsingSQLBulkCopy(csvData);
+
+
+
+        }
+        /**
+            private static DataTable GetDataTableFromCSVFile(string csv_file_path)
+            {
+                DataTable csvData = new DataTable();
+                try
+                {
+                    using(TextFieldParser csvReader = new TextFieldParser(csv_file_path))
+                    {
+                        csvReader.SetDelimiters(new string[] { ", " });
+                        csvReader.hasFieldsEnclosedInQuotes = true;
+                        string[] colFields = csvReader.readFields();
+                        foreach(string column in colFields)
+                        {
+                            DataColumn datacolumn = new DataColumn(column);
+                            datacolumn.AllowDBNull = true;
+                            csvData.columns.Add(datacolumn);
+                        }
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fieldData = csvReader.ReadFields();
+
+                            for (int i = 0; i < fieldData.Length; i++)
+                            {
+                                if (fieldData[i] == "")
+                                {
+                                    fieldData[i] = null; 
+                                }
+                            }
+                            csvData.Rows.Add(fieldData);
+                        }
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+                return csvData;
+            }
+           
+       
+            public static void InsertDataIntoSQLServerUsingSQLBulkCopy(DataTable csvFileData)
+            {
+                using(SqlConnection connect = new SqlConnection("Data Source=xmpdb01;Persist Security Info=True;User ID=jrxmedia;Password=JR1sqlus3r; database=RileysSandbox");
+                {
+                    dbConnection.Open();
+                    using (SqlBulkCopy s = new SqlBulkCopy(dbConnection))
+                    {
+                        s.DestinationTableName = 'TestTable';
+
+                        foreach (var column in csvFileData.columns)
+                            s.ColumnMappings.Add(column.toString(), column.ToString());
+
+                        s.WriteToServer(csvFileData);
+                    }
+                    
+                }
+            }
+        **/
+
+        /**
+       public static List<string> ReadFields(string row, string delimeter)
+       {
+
+           List<string> rowret;
+           for (int i = 0; i < row.Length; i++)
+           {
+
+           }
+       }
+       **/
+        public static void BulkInsertToDatabase(DataTable dataTable, string destinationTable)
+        {
+            // Define the connection string
+            string connectionString = "Server=trev;Database=555;Trusted_Connection=True;";
+
+            // Use SqlBulkCopy to perform the bulk insert
+            using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(connectionString))
+            {
+                // Set the destination table name
+                sqlBulkCopy.DestinationTableName = destinationTable;
+
+                try
+                {
+                    // Write the data to the SQL Server table
+                    sqlBulkCopy.WriteToServer(dataTable);
+                    Console.WriteLine("Data successfully inserted into the database.");
+                }
+                catch (Exception ex)
+                {
+                    // Handle any errors that may have occurred
+                    Console.WriteLine($"An error occurred: {ex.Message}");
+                }
+            }
+        }
+        public static void ExportToExcel(DataTable dataTable, string filePath)
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Sheet1");
+
+                // Add headers
+                for (int i = 0; i < dataTable.Columns.Count; i++)
+                {
+                    worksheet.Cell(1, i + 1).Value = dataTable.Columns[i].ColumnName;
+                }
+
+                // Add data
+                for (int row = 0; row < dataTable.Rows.Count; row++)
+                {
+                    for (int col = 0; col < dataTable.Columns.Count; col++)
+                    {
+                        worksheet.Cell(row + 2, col + 1).Value = dataTable.Rows[row][col].ToString();
+                    }
+                }
+
+                // Save the workbook
+                workbook.SaveAs(filePath);
+            }
+        }
+        public static DataTable ConvertFiletoDataTable(string strFilePath, char delimiter)
+        {
+            DataTable dt = new DataTable();
+            using (StreamReader sr = new StreamReader(strFilePath))
+            {
+                // Read the headers
+                List<string> headers = SplitCsvRow(sr.ReadLine(), delimiter);
+                foreach (string header in headers)
+                {
+                    dt.Columns.Add(header);
+                }
+
+                // Read the data
+                while (!sr.EndOfStream)
+                {
+                    List<string> rowValues = SplitCsvRow(sr.ReadLine(), delimiter);
+                    DataRow dr = dt.NewRow();
+                    for (int i = 0; i < headers.Count; i++)
+                    {
+                        dr[i] = rowValues[i];
+                    }
+                    dt.Rows.Add(dr);
+                }
+            }
+            return dt;
+        }
+
+        /// <summary>
+        /// Splits a CSV row string into a list of fields, correctly handling quotes and delimiters.
+        /// </summary>
+        /// <param name="row">The CSV row string.</param>
+        /// <param name="delimiter">The delimiter used in the CSV file (e.g., ',').</param>
+        /// <returns>A list of fields extracted from the CSV row.</returns>
+        public static List<string> SplitCsvRow(string row, char delimiter)
+        {
+            List<string> rowValues = new List<string>();
+            bool insideQuotes = false;
+            string currentField = string.Empty;
+
+            for (int i = 0; i < row.Length; i++)
+            {
+                char currentChar = row[i];
+
+                if (currentChar == '"')
+                {
+                    // Toggle the insideQuotes flag when encountering a quote character
+                    if (insideQuotes && i < row.Length - 1 && row[i + 1] == '"')
+                    {
+                        // If the next character is also a quote, it's an escaped quote, so add it to the field
+                        currentField += '"';
+                        i++; // Skip the next quote
+                    }
+                    else
+                    {
+                        insideQuotes = !insideQuotes;
+                    }
+                }
+                else if (currentChar == delimiter && !insideQuotes)
+                {
+                    // If encountering a delimiter and not inside quotes, finalize the current field
+                    rowValues.Add(currentField);
+                    currentField = string.Empty;
+                }
+                else
+                {
+                    // Add character to the current field
+                    currentField += currentChar;
+                }
+            }
+
+            // Add the last field
+            rowValues.Add(currentField);
+
+            return rowValues;
+        }
+
+        public static void InsertOneLineSQL(string firstName, string lastName, string address1, string address2, string city, string state, string zip, DateTime dateOfBirth)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection("Data Source=xmpdb01;Persist Security Info=True;User ID=jrxmedia;Password=JR1sqlus3r; database=RileysSandbox"))
+                {
+                    conn.Open();
+
+                    string sql = "INSERT INTO TestTable (FirstName, LastName, Address1, Address2, City, State, Zip, Date) " +
+                                 "VALUES (@firstName, @lastName, @address1, @address2, @city, @state, @zip, @dateOfBirth)";
+
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@firstName", firstName);
+                        cmd.Parameters.AddWithValue("@lastName", lastName);
+                        cmd.Parameters.AddWithValue("@address1", address1);
+                        cmd.Parameters.AddWithValue("@address2", address2);
+                        cmd.Parameters.AddWithValue("@city", city);
+                        cmd.Parameters.AddWithValue("@state", state);
+                        cmd.Parameters.AddWithValue("@zip", zip);
+                        cmd.Parameters.AddWithValue("@dateOfBirth", dateOfBirth);
+
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    Console.WriteLine($" '{firstName} {lastName}' inserted successfully!");
+                }
+            }
+            catch (SqlException ex)
+            {
+                Console.WriteLine("Error inserting data: " + ex.Message);
+            }
+        }
+    }
+}
